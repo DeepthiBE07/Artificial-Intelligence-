@@ -64,3 +64,38 @@ def hill_climbing(initial_state):
 initial_state = [3, 1, 2, 0]
 
 final_state, final_cost = hill_climbing(initial_state)
+
+
+output:
+Step 0: Initial state
+. . . Q 
+. Q . . 
+. . Q . 
+Q . . . 
+
+Cost = 2
+
+Step 1: Move to better neighbour
+. . . Q 
+Q . . . 
+. . Q . 
+. Q . . 
+
+Cost = 1
+
+Step 2: Move to better neighbour
+. . Q . 
+Q . . . 
+. . . Q 
+. Q . . 
+
+Cost = 0
+
+Step 3: Reached local minimum
+Final state:
+. . Q . 
+Q . . . 
+. . . Q 
+. Q . . 
+
+Final cost = 0
