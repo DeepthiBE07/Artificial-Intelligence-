@@ -1,1 +1,49 @@
 
+def unify(x, y, substitution={}):
+    """
+    Unifies two FOL expressions (x and y) and returns the substitution if possible.
+    """
+    if substitution is None:
+        return None
+    elif x == y:
+        return substitution
+    elif isinstance(x, str) and x.islower(): # Variable
+        return unify_variable(x, y, substitution)
+    elif isinstance(y, str) and y.islower(): # Variable
+        return unify_variable(y, x, substitution)
+    elif isinstance(x, list) and isinstance(y, list) and len(x) == len(y): # Functions or Predicates
+        if not x or not y:
+            return substitution
+        return unify(x[1:], y[1:], unify(x[0], y[0], substitution))
+    else:
+        return None
+
+def unify_variable(var, x, substitution):
+    """
+    Handles unification when one of the terms is a variable.
+    """
+    if var in substitution:
+        return unify(substitution[var], x, substitution)
+    elif x in substitution:
+        return unify(var, substitution[x], substitution)
+    elif occurs_check(var, x):
+        return None
+    else:
+        substitution[var] = x
+        return substitution
+
+def occurs_check(var, x):
+    """
+    Checks if var occurs in x to prevent infinite loops.
+    """
+    if var == x:
+        return True
+    elif isinstance(x, list):
+        return any(occurs_check(var, subterm) for subterm in x)
+    return False
+
+# Example
+expression1 = ["knows", "x", ["father", "y"]]
+expression2 = ["knows", "john", ["father", "mary"]]
+result = unify(expression1, expression2, {})
+print("Unification Result:", result)
