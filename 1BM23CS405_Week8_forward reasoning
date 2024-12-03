@@ -1,0 +1,54 @@
+class KnowledgeBase:
+    def __init__(self):
+        self.facts = set()       # Set of known facts
+        self.rules = []          # List of rules as (premises, conclusion)
+
+    def add_fact(self, fact):
+        self.facts.add(fact)
+
+    def add_rule(self, premises, conclusion):
+        self.rules.append((premises, conclusion))
+
+    def infer(self):
+        new_inferences = True
+        while new_inferences:
+            new_inferences = False
+            for premises, conclusion in self.rules:
+                # Check if all premises are satisfied
+                if all(premise in self.facts for premise in premises):
+                    if conclusion not in self.facts:
+                        self.facts.add(conclusion)
+                        new_inferences = True
+
+    def is_fact(self, query):
+        return query in self.facts
+
+
+# Initialize the Knowledge Base
+kb = KnowledgeBase()
+
+# Facts
+kb.add_fact("Enemy(CountryA, America)")
+kb.add_fact("American(Robert)")
+kb.add_fact("Weapon(Missile)")
+kb.add_fact("Sells(Robert, Missile, CountryA)")
+
+# Rules
+# Rule 1: Enemy(x, America) → Hostile(x)
+kb.add_rule(["Enemy(CountryA, America)"], "Hostile(CountryA)")
+
+# Rule 2: American(x) ∧ Weapon(y) ∧ Sells(x, y, z) ∧ Hostile(z) → Criminal(x)
+kb.add_rule(
+    ["American(Robert)", "Weapon(Missile)", "Sells(Robert, Missile, CountryA)", "Hostile(CountryA)"],
+    "Criminal(Robert)"
+)
+
+# Perform inference
+kb.infer()
+
+# Query
+query = "Criminal(Robert)"
+if kb.is_fact(query):
+    print(f"The query '{query}' is Proven.")
+else:
+    print(f"The query '{query}' is Not Proven.")
