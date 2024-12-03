@@ -1,63 +1,117 @@
-class Clause:
-    def __init__(self, literals):
-        self.literals = set(literals)
+from datetime import datetime
+import random, time, math
+from copy import deepcopy, copy
+import decimal
 
-    def __repr__(self):
-        return " ∨ ".join(sorted(self.literals))
+class Board:
+    def __init__(self, queen_count=8):
+        self.queen_count = queen_count
+        self.reset()
 
-    def resolve(self, other):
-        resolvents = []
-        for literal in self.literals:
-            negated_literal = f"¬{literal}" if not literal.startswith('¬') else literal[1:]
-            if negated_literal in other.literals:
-                new_literals = (self.literals - {literal}) | (other.literals - {negated_literal})
-                resolvents.append(Clause(new_literals))
-        return resolvents
+    def reset(self):
+        self.queens = [-1 for i in range(0, self.queen_count)]
 
-
-def resolution(clauses, query):
-    negated_query = Clause([f"¬{query}"])
-    clauses.append(negated_query)
-
-    new = set()
-    seen_pairs = set()
-
-    while True:
-        pairs = [(clauses[i], clauses[j]) for i in range(len(clauses)) for j in range(i + 1, len(clauses))]
-        for ci, cj in pairs:
-            if (ci, cj) in seen_pairs or (cj, ci) in seen_pairs:
-                continue
-            seen_pairs.add((ci, cj))
-
-            resolvents = ci.resolve(cj)
-            for resolvent in resolvents:
-                if not resolvent.literals:
-                    return True
-                new.add(frozenset(resolvent.literals))
-
-        if new.issubset(set(map(frozenset, (c.literals for c in clauses)))):
-            return False
-        clauses.extend(Clause(list(literals)) for literals in new - set(map(frozenset, (c.literals for c in clauses))))
-        new.clear()
+        for i in range(0, self.queen_count):
+            self.queens[i] = random.randint(0, self.queen_count - 1)
+            # self.queens[row] = column
 
 
-KB = [
-    Clause(["¬Food(Peanuts)", "Likes(John, Peanuts)"]),  # John likes all kinds of food
-    Clause(["Food(Apple)"]),
-    Clause(["Food(Vegetables)"]),
-    Clause(["Food(Peanuts)"]),  # Explicit Peanuts as Food
-    Clause(["¬Eats(Anil, Peanuts)", "Food(Peanuts)"]),
-    Clause(["Eats(Anil, Peanuts)"]),  # Anil eats peanuts
-    Clause(["Alive(Anil)"]),           # Anil is alive
-    Clause(["¬Alive(Anil)", "¬Killed(Anil)"]),  # Alive -> Not Killed
-    Clause(["Killed(Anil)", "Alive(Anil)"])     # Not Killed -> Alive
-]
+    def calculateCost(self):
+        threat = 0
 
-# Query: John likes peanuts
-query = "Likes(John, Peanuts)"
+        for queen in range(0, self.queen_count):
+            for next_queen in range(queen+1, self.queen_count):
+                if self.queens[queen] == self.queens[next_queen] or abs(queen - next_queen) == abs(self.queens[queen] - self.queens[next_queen]):
+                    threat += 1
 
-# Run the resolution algorithm
-if resolution(KB, query):
-    print(f"The conclusion '{query}' is proven by resolution.")
-else:
-    print(f"The conclusion '{query}' cannot be proven.")
+        return threat
+
+    @staticmethod
+    def calculateCostWithQueens(queens):
+        threat = 0
+        queen_count = len(queens)
+
+        for queen in range(0, queen_count):
+            for next_queen in range(queen+1, queen_count):
+                if queens[queen] == queens[next_queen] or abs(queen - next_queen) == abs(queens[queen] - queens[next_queen]):
+                    threat += 1
+
+        return threat
+
+    @staticmethod
+    def toString(queens):
+        board_string = ""
+
+        for row, col in enumerate(queens):
+            board_string += "(%s, %s)\n" % (row, col)
+
+        return board_string
+
+    def getLowerCostBoard(self):
+        displacement_count = 0
+        temp_queens = self.queens
+        lowest_cost = self.calculateCost(temp_queens)
+
+        for i in range(0, self.queen_count):
+            temp_queens[i] = (temp_queens[i] + 1) % (self.queen_count - 1)
+
+            for j in range(queen+1, self.queen_count):
+                temp_queens[j] = (temp_queens[j] + 1) % (self.queen_count - 1)
+
+    def __str__(self):
+        board_string = ""
+
+        for row, col in enumerate(self.queens):
+            board_string += "(%s, %s)\n" % (row, col)
+
+        return board_string
+
+class SimulatedAnnealing:
+    def __init__(self, board):
+        self.elapsedTime = 0;
+        self.board = board
+        self.temperature = 4000
+        self.sch = 0.99
+        self.startTime = datetime.now()
+
+
+    def run(self):
+        board = self.board
+        board_queens = self.board.queens[:]
+        solutionFound = False
+
+        for k in range(0, 170000):
+            self.temperature *= self.sch
+            board.reset()
+            successor_queens = board.queens[:]
+            dw = Board.calculateCostWithQueens(successor_queens) - Board.calculateCostWithQueens(board_queens)
+            exp = decimal.Decimal(decimal.Decimal(math.e) ** (decimal.Decimal(-dw) * decimal.Decimal(self.temperature)))
+
+            if dw > 0 or random.uniform(0, 1) < exp:
+                board_queens = successor_queens[:]
+
+            if Board.calculateCostWithQueens(board_queens) == 0:
+                print("Solution:")
+                print(Board.toString(board_queens))
+                self.elapsedTime = self.getElapsedTime()
+                print("Success, Elapsed Time: %sms" % (str(self.elapsedTime)))
+                solutionFound = True
+                break
+
+        if solutionFound == False:
+            self.elapsedTime = self.getElapsedTime()
+            print("Unsuccessful, Elapsed Time: %sms" % (str(self.elapsedTime)))
+
+        return self.elapsedTime
+
+    def getElapsedTime(self):
+        endTime = datetime.now()
+        elapsedTime = (endTime - self.startTime).microseconds / 1000
+        return elapsedTime
+
+
+if __name__ == '__main__':
+    board = Board()
+    print("Board:")
+    print(board)
+    SimulatedAnnealing(board).run()
